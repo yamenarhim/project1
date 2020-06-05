@@ -1,0 +1,234 @@
+<!DOCKTYPE html>
+<html lang="en">
+<head>
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+
+<script>
+//Unwanted Experimental code for the time being
+/*
+  This code I used to experiment on Socket IO
+  It's Job to inform users and update the number of users on the website
+
+   document.addEventListener('DOMContentLoaded', () => {
+     function sendd(){
+       socket.emit('sign up')
+     }
+     console.log(location.protocol + '//' + document.domain + ':' + location.port)
+      var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+      socket.emit('sign up')
+
+
+    socket.on('new user',data=>{
+      console.log(data);
+      number_of_users=data["number_of_users"];
+      console.log(number_of_users);
+      document.querySelector('#number_of_users').innerHTML=number_of_users;
+    });
+  });
+
+*/
+</script>
+
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<style>
+.message-box1::-webkit-scrollbar {
+  display: none;
+}
+
+.shorter-div {
+			height:10px;
+		}
+	.short-div {
+	  height:25px;
+	}
+	#big-div {
+	  height:200px;
+	}
+#channels_buttons{
+  color:#F0FFFF;
+  max-width: 140spx;
+}
+body, html{
+  font-family: Arial, sans-serif;
+  font-size: 19;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  overflow-y: auto;
+  scrollbar-color: #008080 black ;
+  scrollbar-width: thin;
+}
+#container{
+  height:750px;
+}
+.channels_box{
+  height:750px;
+  max-width: 100px;
+}
+#channels_container{
+  max-width: 140px;
+  width:140px;
+}
+.margin{
+  margin: 0px;
+}
+#first-user{
+  margin-left: 70%;
+}
+#secound-user{
+  margin-right: 40%;
+}
+#first-user,#secound-user{
+    background-color: skyblue;
+    margin-top: 1px;
+    height: auto;
+    max-height: auto;
+    align-items:flex-end;
+    width:250px;
+}
+#sending-box{
+  width:820px;
+  align-items:flex-end;
+  height:30px;
+  margin-top: 360px;
+  padding-left: 10px
+}
+#messages {
+  display:grid;
+  margin-bottom:30px;
+}
+#message-box1{
+      display:grid;
+      max-height: 630px;
+      overflow-y:scroll;
+      margin-bottom: -350px;
+      scrollbar-color: #008080 black ;
+      scrollbar-width: thin;
+}
+#message_box{
+  width: 650px;
+}
+a:hover {
+  background-color: lightgray;
+}
+li:hover {
+  background-color: lightgray;
+}
+
+@media screen and (max-width: 500px) {
+  .channels_box{
+    height:600px;
+    overflow-y: hidden;
+  }
+  body{
+    font-family: Arial, sans-serif;
+    font-size: 12;
+  }
+  #first-user{
+    margin-left: 10%; //changed margin from 40% to 20%
+  }
+  #first-user,#secound-user{
+      width:125px;
+      height:20px;
+  }
+  #btn{
+    width: 50px;
+    height:30px;
+  }
+.channels_box{
+    width:50px;
+  }
+  #main_container{
+  height: 100vh; /* For 100% screen height */
+  max-height:  480px;
+  }
+  #container{
+    height: 100vh; /* For 100% screen height */
+    max-height:  480px;
+    overflow-x: hidden;
+  }
+  #messages{
+    margin-bottom: 100px;
+  }
+  #message-box1{
+    max-height: 400px;
+    margin-bottom: 10px;
+  }
+#channels_buttons{
+    padding: 5px;
+    width: 60px;
+    height: auto;
+    border-style: solid;
+    border-color: #202020;
+    font-size: 12px;
+
+  }
+#sending-box{
+  margin-top: 10px;
+}
+#message_box{
+  width:200px;
+}
+}
+</style>
+{% block head %}
+
+{% endblock %}
+
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light" id="nav">
+  <a class="navbar-brand" href="/">Navbar</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+
+  	<ul class="navbar-nav mr-auto">
+  		<li>
+  			<a class="nav-link" href="/" >Users In Server</a>
+  		</li>
+      <li>
+  			<a class="nav-link" href={{ url_for('channels') }} >channels</a>
+  		</li>
+
+  		{% if session.get('isloggedin') is none  %}
+  		<li>
+  			<a class="nav-link" href={{ url_for('signin') }}>Sign In</a>
+  		</li>
+  		<li>
+  			<a class="nav-link" href={{ url_for('signup') }}>signup</a>
+  		</li>
+
+  		{% else %}
+  		<li>
+  			<a class="nav-link" href={{ url_for('sign_out') }}>sign out</a>
+  		</li>
+      <li>
+  			<a class="nav-link" href={{ url_for('clear_chat_data') }}>Clear Data</a>
+  		</li>
+      <li>
+  			<a class="nav-link" id="number_of_users">{{ number_of_users }}</a>
+  		</li>
+      <li>
+        <a class="nav-link" href={{ url_for('creatting_channel') }}>create channel</a>
+      </li>
+  		<a class="nav-link" href="">{{ session.get('username') }}</a>
+
+  		{% endif %}
+
+  	</ul>
+
+  </div>
+</nav>
+{% block body %}
+
+{% endblock %}
+</body>
+</html>

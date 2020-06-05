@@ -1,0 +1,198 @@
+
+
+{% extends "base.html" %}
+	{% block head %}
+	<script>
+		var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+
+		socket.on('recived message',data=>{
+			if (data['message sender']===localStorage.getItem('other_user') ){
+					const div = document.createElement('div');
+					div.id="secound-user";
+					div.innerHTML=data['message']
+					document.querySelector("#message-box1").appendChild(div);
+			}
+		});
+
+		//this socket will wait if someone joined to a specific room then do sth about it
+		socket.on('joined room',data=>{
+			//in this code the user is informed every time someone wants to talk to him
+			console.log(data)
+      const div = document.createElement('div');
+			div.className="row";
+			div.innerText=data['message']
+			div.style="text-align:right;margin-left: 25px;color:red;"
+			document.querySelector('#message-box1').appendChild(div);
+    });
+	function send(message){
+				/*
+				This function will take the argument message and then figure out the first and secound user then send those..
+				...informations to the server to proccess it.
+				to do:
+				1. ensure that the webpage will remmemper the message box informations.
+				*/
+
+			//Sending message to the server
+			const  request=new XMLHttpRequest();
+			request.open('POST','/save_message');
+
+			//when the request is sent to the server succefully this code show the message to the page
+			request.onload=() =>{
+				const div=document.createElement('div');
+				div.className="row";
+				div.innerText=message;
+				div.id="first-user"
+
+				document.querySelector('#message-box1').appendChild(div);
+				socket.emit('new message', {'message':message,'secound_user':localStorage.getItem('other_user')});
+			}
+
+			//Add data to send
+			const data = new FormData();
+			data.append('message',message);
+			data.append('other_user',localStorage.getItem('other_user'))
+
+			//send request
+			request.send(data);
+
+			return false;
+
+		};
+function load_chat(user){
+		/*
+
+		to do:
+		[Security]
+		1. ensure the security of users not being able to cheat this code to load any chat they want on this server.
+		*/
+
+		//save the secound user that the user want's to talk to
+		localStorage.setItem('other_user',user);
+
+		//initialize the request
+		const request = new XMLHttpRequest();
+		request.open('POST','/load_chat');
+
+		//when the request is loaded this code takes the data sent from the server and load it into the message box
+		request.onload=()=>{
+
+			//debugging
+			console.log(request.responseText)
+			//end of debugging
+
+			//recive the messages list from the server and parse it to usefull code
+			const data = JSON.parse(request.responseText);
+			var list =data["messages"] // list of messages recived from the server (this will be shown to the user after loading the chat)
+
+			//debugging
+			console.log(list)
+			//end of debugging
+			document.querySelector('#message-box1').innerHTML = "";
+			//run through the messages list and figure out which messages from which user and show it properly
+			document.querySelector('#other-user').innerHTML = localStorage.getItem('other_user');
+			for(i=0;list.length+i<20;i++){
+				const div = document.createElement('div')
+				div.innerText=''
+				document.querySelector('#message-box1').appendChild(div);
+				div.id=""
+			};
+			for(i=0;i<list.length;i++){
+
+				//if it from the secound user show it aligned to the left (which dosen't need any styling)
+				if (list[i][0] ===localStorage.getItem('other_user')){
+					//the code below will create a div, append it to the message box and align it properly
+					const div =document.createElement('div')
+					div.className="row"
+					div.innerText=list[i][1]
+					div.id="secound-user"
+
+					document.querySelector('#message-box1').appendChild(div);
+				}
+				//if it from the first user show it aligned to the right (which requeires styling )
+				else{
+					//the code below will create a div, append it to the message box and align it properly
+					const div = document.createElement('div')
+					div.className="row"
+					div.innerText=list[i][1]
+					div.id="first-user"
+
+					document.querySelector('#message-box1').appendChild(div);
+				}
+			}
+			socket.emit('joined room', {'secound_user':localStorage.getItem('other_user')});
+
+		}
+
+		//initialize the formData we want to send to the server (more information on why the server  need them in the server load chat function)
+		const data= new FormData();
+		data.append('secound_user',localStorage.getItem('other_user'));
+		console.log(data.get('foo'))
+
+		request.send(data);
+		console.log(data)
+
+
+	}
+
+
+
+
+
+	</script>
+	{% endblock %}
+	{% block body %}
+<div class="container-fluid" id="main_container">
+	<div class="row" id="container">
+		<ul id="channels_container" class="nav flex-column bg-info">
+			{% if no_user %}
+				<li id="" class="nav-item">
+						No Users signed up yet!!
+				</li>
+			{% endif %}
+
+			{% for user in usersnames %}
+				{% if current_user != user %}
+					<li id="" class="nav-item">
+						<button class="btn" id="channels_buttons"  onclick='load_chat("{{ user }}")'>{{ user }}</button>
+					</li>
+					{% endif %}
+
+			{% endfor %}
+
+		</ul>
+	{% if not session.get('isloggedin') is none  %}
+	<div class="col-4 margin" id="messages">
+		<div id="other-user" style="text-align:center;font-weight: bold;">
+
+		</div>
+		<div class="container-fluid message-box1" id="message-box1">
+			<div  id="first-user" >
+					hello
+			</div>
+			<div  id="secound-user">
+				 <div >
+					Hello Back
+				</div>
+				 <div >
+
+				</div>
+			</div>
+		</div>
+		<div id ="sending-box">
+			<div class="row">
+				<input id="message_box"   class="form-control" autocomplete="off" autofocus  type="textarea" placeholder="Enter Your Message"></input>
+				<button id="btn" class="btn bg-info" onclick=send(document.querySelector('#message_box').value)  value="Send Message">Send</button>
+			</div>
+			<div class="row">
+
+			</div>
+		</div>
+	</div>
+	{% endif %}
+
+  </div>
+</div>
+
+
+{% endblock %}

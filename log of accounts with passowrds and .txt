@@ -1,0 +1,3 @@
+- I am working now on the comments on this projects, so I can understand the code and not having to redo it once again in the future.
+- I have implemented the sending and saving of the message, what we need now is a way of reading those saved messages on the server and showing it to the user.
+- 

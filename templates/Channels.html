@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+	{% block head %}
+
+	<script>
+		console.log(window.innerHeight)
+
+		//a code to know the current session
+
+		/*
+		the code will send a request to the server to know the session of the current user
+		*/
+		{% if not session.get('isloggedin') is none  %}
+		const request = new XMLHttpRequest()
+		request.open('POST','/who_am_I')
+
+		request.onload = () =>{
+			const data = JSON.parse(request.responseText);
+			user=data['user'];
+			console.log(user)
+			localStorage.setItem('user',user)
+		}
+		request.send();
+		{% endif %}
+		//End of the user knowing code
+
+		var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port); //Initialize the code for SocketIO (A feauture to make messages instant)
+
+		//Information waiting to be recieved
+		socket.on('new channel message',data=>{
+						console.log(data['secound_user'])
+						console.log(localStorage.getItem('other_user'))
+						var user = localStorage.getItem('user')
+						console.log("your are: "+user)
+						if (data['message sender']===user ){
+							console.log('Nope ')
+						}
+						else{
+							console.log('new messge says: ')
+							console.log(data['message'])
+							const div = document.createElement('div')
+							div.innerText=div.innerHTML=data['message sender']+':'+data['message']
+							div.id="secound-user"
+							document.querySelector("#message-box1").appendChild(div);
+						}
+					});
+
+	  //this socket will wait if someone joined to a specific room then do sth about it
+		/*
+		ideas:
+		1. when someone join the channel we just list them on the right side of message box
+		2. When a friend of your's  join a sound will play.
+		*/
+
+		socket.on('joined channel',data=>{
+						//in this code the user is informed every time someone wants to talk to him
+						console.log(data)
+			      const div = document.createElement('div');
+						div.className="row";
+						div.innerText=data['message']
+						div.style="text-align:right;margin-left: 25px;color:red;"
+						document.querySelector('#message-box1').appendChild(div);
+    });
+
+	function send_channel_message(message){
+				/*
+				This function will take the argument message a and send informations to the server to proccess it.
+				when it recives the request from the server it adds the message to the message box
+				*/
+
+			//Sending message to the server
+			const  request=new XMLHttpRequest();
+			request.open('POST','/save_channel_message');
+
+			//when the request is sent to the server succefully this code change the page content so that the message will appear
+			request.onload=() =>{
+				const div=document.createElement('div');
+				div.className="row  justify-content-end rounded"
+				div.innerText=message;
+				div.id="first-user"
+
+				document.querySelector('#message-box1').appendChild(div);
+				socket.emit('new channel message', {'message':message,'channel':localStorage.getItem('channel')});
+			}
+
+			//Add data to send
+			const data = new FormData();
+			data.append('message',message);
+			data.append('channel',localStorage.getItem('channel'))
+
+			//send request
+			request.send(data);
+
+			return false;
+
+		};
+
+function load_channel(channel){
+		/*
+		This will take the name of the channel send it and when loaded the messages will appear on the message box
+		to do:
+		[Security]
+		1. ensure the security of users not being able to cheat this code to load any chat they want on this server.\\not solved
+		*/
+
+		//save the channel name
+		console.log(channel)
+		localStorage.setItem('channel',channel);
+
+		//initialize the request
+		const request = new XMLHttpRequest();
+		request.open('POST','/load_channel');
+
+		//when the request is loaded this code takes the data sent from the server and load it into the message box
+		request.onload=()=>{
+					const data = JSON.parse(request.responseText);	//recive the messages list from the server and parse it to usefull code
+					var list =data["messages"] // list of messages recived from the server (this will be shown to the user after loading the chat)
+					const current_user= data["current_user"]
+
+					document.querySelector('#message-box1').innerHTML = "";
+
+					//this for loob is for styling purposes removing it will resault in the first 20 or so message not be well aparted
+					for(i=0;list.length+i<20;i++){
+						const div = document.createElement('div')
+						div.innerText=''
+						document.querySelector('#message-box1').appendChild(div);
+						div.id=""
+					};
+
+					//run through the messages list and figure out which messages from which user and show it properly
+					for(i=0;i<list.length;i++){
+
+						//if it from any other user it will show it aligned to the left (which dosen't need any styling)
+						if (list[i][0] === current_user){
+							//the code below will create a div, append it to the message box and align it properly
+							const div = document.createElement('div')
+							div.innerText=list[i][1]
+							div.id="first-user"
+
+							document.querySelector('#message-box1').appendChild(div);
+						}
+						//if it from the the same user that is signed in show it aligned to the right (which requeires styling )
+						else {
+							//the code below will create a div, append it to the message box and align it properly
+							const div =document.createElement('div')
+							div.innerText=list[i][0] + ": "+list[i][1]
+							div.id="secound-user"
+
+							document.querySelector('#message-box1').appendChild(div);
+						}
+
+					}
+					socket.emit('joined channel', {'channel':localStorage.getItem('channel')});
+		}
+
+		//initialize the formData we want to send to the server (more information on why the server  need them in the server load chat function)
+		const data= new FormData();
+		data.append('channel_name',localStorage.getItem('channel'));
+
+		request.send(data);
+
+
+	}
+
+
+	</script>
+	<style>
+		@media screen and (max-width: 500px) {
+			#channels_font_style{
+				font-size:12px;
+			}
+		#channels_title {
+			font-size:12px;
+
+		}
+	}
+	</style>
+	{% endblock %}
+	{% block body %}
+	<div class="container-fluid" id="main_container">
+		<div class="row" id="container">
+			<ul  id="channels_container" class="nav flex-column bg-info">
+				{% if no_channels%}
+					<li id="" class="nav-item">
+							No Channels Created yet!!
+					</li>
+
+				{% else %}
+					{% for channel in channelsnames %}
+				  <li id="" class="nav-item">
+				    	<button class="btn" id="channels_buttons"  onclick='load_channel("{{ channel }}")'>{{ channel }}</button>
+				  </li>
+					{% endfor %}
+				{% endif %}
+			</ul>
+				{% if not session.get('isloggedin') is none  %}
+				 <div class="col-4 margin" id="messages">
+						<div class="container-fluid message-box1" id="message-box1">
+							<div  id="first-user">
+									hello
+							</div>
+
+							<div  id="secound-user">
+									hello
+							</div>
+						</div>
+						<div id="sending-box" >
+							<div class="row" >
+								<input class="form-control"  id="message_box" autocomplete="off" autofocus  type="textarea" placeholder="Enter Your Message"></input>
+								<button  class="btn bg-info" onclick=send_channel_message(document.querySelector('#message_box').value)  value="Send Message">Send</button>
+							</div>
+
+							<div class="row">
+
+							</div>
+						</div>
+
+				 </div>
+				{% endif %}
+
+		</div>
+
+</div>
+
+{% endblock %}
